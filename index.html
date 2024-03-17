@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Trezor BG Maker</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            background-color: #f0f0f0;
+        }
+        #inputText {
+            width: 80%;
+            max-width: 250px;
+            padding: 5px;
+            margin-top: 20px;
+        }
+        button {
+            margin: 20px;
+            padding: 10px 20px;
+            font-size: 1em;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #preview {
+            width: 128px;
+            height: 64px;
+            background-color: black;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: auto;
+            padding: 5px;
+            font-size: 30px; /* Initial font size, will be adjusted dynamically */
+            overflow: hidden;
+        }
+        footer {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #111;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <label for="inputText">Enter Text:</label>
+        <input type="text" id="inputText" value="I AM FIAT">
+        <button onclick="translateText()">Translate</button>
+    </div>
+    <div id="preview" class="translated-text"></div>
+    <button  id="translateButton" onclick="downloadPNG()">Download as PNG</button>
+    <canvas id="canvas" style="display: none;"></canvas>
+    <script>
+ function fitTextToContainer(container, text) {
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext('2d');
+    var maxWidth = container.clientWidth;
+    var maxHeight = container.clientHeight;
+    var fontSize = 30; // Maximum font size
+    context.font = `${fontSize}px Arial`;
+
+    // Calculate the width of the text and adjust the font size until the text fits within the canvas width
+    while (context.measureText(text).width > maxWidth && fontSize > 10) {
+        fontSize--;
+        context.font = `${fontSize}px Arial`;
+    }
+
+    // Set the font size of the preview container to the calculated font size
+    container.style.fontSize = `${fontSize}px`;
+    container.textContent = text;
+}
+
+// When the page loads and when the text is translated, adjust the preview container's font size
+document.addEventListener('DOMContentLoaded', translateText);
+
+function translateText() {
+    var inputText = document.getElementById('inputText').value;
+    fitTextToContainer(document.getElementById('preview'), inputText);
+}
+
+function downloadPNG() {
+    var canvas = document.getElementById('canvas');
+    var ctx = canvas.getContext('2d');
+    var text = document.getElementById('inputText').value.toUpperCase(); // Convert text to uppercase
+    canvas.width = 128;
+    canvas.height = 64;
+
+    // Set background to black
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Initialize font size and adjust if necessary
+    var maxFontSize = 30; // Maximum possible font size
+    var fontSize = maxFontSize;
+    var textWidth;
+    do {
+        ctx.font = `${fontSize}px Arial`;
+        textWidth = ctx.measureText(text).width;
+        if (textWidth > canvas.width) {
+            fontSize--;
+        }
+    } while (textWidth > canvas.width && fontSize > 10); // Avoid font size smaller than 10px
+
+    // Draw the text centered on the canvas
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // If text contains multiple lines, we need to adjust starting y position
+    var lines = wrapText(ctx, text, canvas.width);
+    var startingY = canvas.height / 2 - (lines.length - 1) * fontSize / 2;
+
+    lines.forEach((line, index) => {
+        ctx.fillText(line, canvas.width / 2, startingY + index * fontSize);
+    });
+
+    // Create a PNG image from the canvas
+    var image = canvas.toDataURL('image/png');
+    var link = document.createElement('a');
+    link.download = 'trezor-bg.png'; // Set the download file name
+    link.href = image;
+    link.click();
+    link.remove();
+}
+
+function wrapText(context, text, maxWidth) {
+    var words = text.split(' ');
+    var lines = [];
+    var currentLine = words[0];
+
+    for (var i = 1; i < words.length; i++) {
+        var word = words[i];
+        var width = context.measureText(currentLine + " " + word).width;
+        if (width < maxWidth) {
+            currentLine += " " + word;
+        } else {
+            lines.push(currentLine);
+            currentLine = word;
+        }
+    }
+    lines.push(currentLine); // Push the last line
+    return lines;
+}
+
+
+
+
+
+// Call this function to update canvas and download button when the page loads
+translateText();
+
+
+ 
+    </script>
+    <footer>Author: Paolo C.</footer>
+</body>
+</html>
